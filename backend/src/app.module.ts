@@ -20,7 +20,7 @@ import { PersonaModule } from './persona/persona.module.js';
         host: config.get<string>('DB_HOST', 'localhost'),
         port: Number(config.get('DB_PORT', 5434)),
         username: config.get<string>('DB_USER', 'bancamovil'),
-        password: config.get<string>('POSTGRES_PASSWORD'),
+        password: config.getOrThrow<string>('POSTGRES_PASSWORD'),
         database: config.get<string>('DB_NAME', 'bancamovil_db'),
         autoLoadEntities: true,
         // las tablas ya se crearon con el script SQL, por eso no se sincroniza
