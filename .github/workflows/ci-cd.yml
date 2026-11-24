@@ -1,0 +1,95 @@
+name: CI-CD Banca Movil
+
+# Se ejecuta en cada push a las tres ramas del flujo
+# y en los pull request que van hacia pruebas o master
+on:
+  push:
+    branches: [desarrollo, pruebas, master]
+  pull_request:
+    branches: [pruebas, master]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (lint, build y pruebas)
+    runs-on: ubuntu-latest
+
+    # PostgreSQL temporal solo para las pruebas del pipeline
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bancamovil
+          POSTGRES_PASSWORD: ci_bancamovil
+          POSTGRES_DB: bancamovil_db
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U bancamovil -d bancamovil_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_PASSWORD: ci_bancamovil
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Pruebas unitarias
+        run: npm test
+
+      # se usa el psql del mismo contenedor porque el esquema viene de pg_dump 17
+      - name: Cargar esquema de la base
+        working-directory: .
+        run: docker exec -i ${{ job.services.postgres.id }} psql -v ON_ERROR_STOP=1 -U bancamovil -d bancamovil_db < database/01_schema.sql
+
+      - name: Pruebas e2e (API + PostgreSQL)
+        run: npm run test:e2e
+
+      - name: Guardar compilado
+        if: github.event_name == 'push' && github.ref_name == 'master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+          retention-days: 7
+
+  entrega:
+    name: Entrega (solo master)
+    needs: backend
+    if: github.event_name == 'push' && github.ref_name == 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar compilado
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: dist
+
+      - name: Resumen de la entrega
+        run: |
+          echo "### Version lista para entregar" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${GITHUB_SHA::7}" >> $GITHUB_STEP_SUMMARY
+          echo "- Archivos compilados: $(find dist -type f | wc -l)" >> $GITHUB_STEP_SUMMARY

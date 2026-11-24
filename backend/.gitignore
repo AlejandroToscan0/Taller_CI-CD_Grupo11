@@ -1,0 +1,17 @@
+# dependencias y compilado
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# variables locales
+.env
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+.DS_Store

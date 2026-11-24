@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: bancamovil-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bancamovil
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: bancamovil_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - bancamovil_pgdata:/var/lib/postgresql/data
+
+volumes:
+  bancamovil_pgdata:
