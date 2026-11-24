@@ -50,8 +50,9 @@ export class PersonaService {
     try {
       return await this.personaRepository.save(persona);
     } catch (error) {
-      const codigo = (error as QueryFailedError & { driverError?: { code?: string } })
-        .driverError?.code;
+      const codigo = (
+        error as QueryFailedError & { driverError?: { code?: string } }
+      ).driverError?.code;
       if (error instanceof QueryFailedError && codigo === '23505') {
         throw new ConflictException(
           `Ya existe una persona con la identificacion ${persona.identificacion}`,

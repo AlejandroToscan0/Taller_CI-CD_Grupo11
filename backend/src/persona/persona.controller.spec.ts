@@ -8,7 +8,9 @@ describe('PersonaController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PersonaController],
-      providers: [{ provide: PersonaService, useValue: { findAll: vi.fn(() => []) } }],
+      providers: [
+        { provide: PersonaService, useValue: { findAll: vi.fn(() => []) } },
+      ],
     }).compile();
 
     controller = module.get<PersonaController>(PersonaController);
